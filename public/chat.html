@@ -1,100 +1,173 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
-<title>Simple Link Chat — Chat</title>
-<style>
-body{margin:0;font-family:Arial;background:#0f0f0f;color:#fff;height:100vh;display:flex}
-#sidebar{width:300px;background:#171717;padding:12px;border-right:1px solid #222;box-sizing:border-box}
-#main{flex:1;display:flex;flex-direction:column}
-#search{width:100%;padding:8px;border-radius:6px;border:none;background:#0d0d0d;color:#fff;margin-bottom:8px}
-.user-item{padding:8px;background:#1f1f1f;border-radius:6px;margin-bottom:6px;cursor:pointer}
-#messages{flex:1;padding:12px;overflow:auto;display:flex;flex-direction:column;gap:8px}
-.msg{max-width:70%;padding:8px;border-radius:8px;background:#222}
-.msg.mine{align-self:flex-end;background:#3c44ff}
-#input{display:flex;padding:10px;border-top:1px solid #222;background:#111}
-#input input{flex:1;padding:10px;border-radius:6px;border:none;background:#0d0d0d;color:#fff}
-#input button{margin-left:8px;padding:10px 12px;border-radius:6px;border:none;background:#5865f2;color:#fff;cursor:pointer}
-.topuser{font-size:13px;color:#bbb;margin-bottom:10px}
-.exit-btn{position:fixed;right:12px;top:12px;padding:6px 8px;background:#333;border-radius:6px;cursor:pointer}
-</style>
+  <meta charset="UTF-8" />
+  <title>Чат | Simple Link Chat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #0f0f0f;
+      color: white;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    #chat {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+    }
+    #message-input {
+      display: flex;
+      padding: 10px;
+      background-color: #1a1a1a;
+    }
+    #message {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    button {
+      margin-left: 8px;
+      padding: 10px 15px;
+      background-color: #5865f2;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background-color: #4752c4;
+    }
+    #search-container {
+      background-color: #1a1a1a;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #search-input {
+      flex: 1;
+      padding: 8px;
+      border-radius: 6px;
+      border: none;
+      font-size: 16px;
+    }
+    #private {
+      font-size: 14px;
+      color: #aaa;
+      margin-left: 10px;
+    }
+    .msg {
+      padding: 8px;
+      margin: 5px 0;
+      border-radius: 6px;
+      max-width: 70%;
+      line-height: 1.4em;
+    }
+    .mine {
+      background-color: #3a3a3a;
+      align-self: flex-end;
+    }
+    .other {
+      background-color: #222;
+      align-self: flex-start;
+    }
+    .private {
+      border: 1px solid #ff9800;
+    }
+  </style>
 </head>
 <body>
-<div id="sidebar">
-  <h3>Пользователи</h3>
-  <input id="q" placeholder="@юзер или часть" id="search" />
-  <div id="results"></div>
-  <div style="margin-top:12px" id="meinfo"></div>
-</div>
-<div id="main">
-  <div id="messages"></div>
-  <div id="input">
-    <input id="text" placeholder="Написать..." />
+  <div id="search-container">
+    <input id="search-input" type="text" placeholder="Введите user ID для поиска..." />
+    <button id="search-btn">Найти</button>
+    <span id="private"></span>
+  </div>
+
+  <div id="chat"></div>
+
+  <div id="message-input">
+    <input id="message" type="text" placeholder="Введите сообщение..." />
     <button id="send">Отправить</button>
   </div>
-</div>
-<div class="exit-btn" id="exit">Выйти</div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-const socket = io();
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
 
-const me = JSON.parse(localStorage.getItem('slc_user') || 'null');
-if(!me){ location.href = '/'; throw new Error('no user'); }
-document.getElementById('meinfo').innerHTML = '<div class="topuser">'+me.nick+' (@'+me.username+')</div>';
+    // 🧠 Локальный "профиль" (можно потом взять из auth)
+    const userId = localStorage.getItem("userId") || "user_" + Math.random().toString(36).substring(2, 10);
+    const nick = localStorage.getItem("nick") || "Пользователь_" + Math.floor(Math.random() * 1000);
 
-let currentChat = null;
+    localStorage.setItem("userId", userId);
+    localStorage.setItem("nick", nick);
 
-async function search(q){
-  const res = await fetch('/api/users?q='+encodeURIComponent(q));
-  const j = await res.json();
-  const el = document.getElementById('results');
-  el.innerHTML = '';
-  j.results.forEach(u=>{
-    const d = document.createElement('div');
-    d.className='user-item';
-    d.innerHTML = '<b>'+u.nick+'</b><br>@'+u.username;
-    d.onclick = ()=> openChat(u.username,u.nick);
-    el.appendChild(d);
-  });
-}
+    socket.emit("join", { userId, nick });
+    console.log("🟢 Вы вошли как", nick, `(${userId})`);
 
-document.getElementById('q').addEventListener('input', (e)=> search(e.target.value));
+    const chat = document.getElementById("chat");
+    const msgInput = document.getElementById("message");
+    const sendBtn = document.getElementById("send");
+    const searchInput = document.getElementById("search-input");
+    const searchBtn = document.getElementById("search-btn");
+    const privateInfo = document.getElementById("private");
 
-function openChat(username,nick){
-  currentChat = username;
-  document.getElementById('messages').innerHTML = '<div style="color:#888">Чат с '+nick+' (@'+username+')</div>';
-  // load history
-  fetch('/api/messages?a='+encodeURIComponent(me.username)+'&b='+encodeURIComponent(username)).then(r=>r.json()).then(j=>{
-    j.messages.forEach(m => addMsg(m));
-  });
-}
+    let privateUser = null; // кому отправляем личные
 
-// register socket presence
-socket.emit('register_socket', me);
+    // 📩 Отправка сообщения
+    sendBtn.onclick = () => {
+      const text = msgInput.value.trim();
+      if (!text) return;
+      if (privateUser) {
+        socket.emit("privateMessage", { toUserId: privateUser, text });
+      } else {
+        socket.emit("message", text);
+      }
+      msgInput.value = "";
+    };
 
-// receive private
-socket.on('receive_private', (m) => {
-  addMsg(m);
-});
+    // 📥 Получение общих сообщений
+    socket.on("message", (msg) => {
+      addMessage(msg.nick, msg.text, msg.id === socket.id ? "mine" : "other");
+    });
 
-// send
-document.getElementById('send').onclick = () => {
-  const txt = document.getElementById('text').value.trim();
-  if(!txt || !currentChat) return;
-  socket.emit('send_private', { from: me.username, to: currentChat, text: txt });
-  document.getElementById('text').value='';
-};
+    // 💌 Получение личных сообщений
+    socket.on("privateMessage", (msg) => {
+      const sender = msg.from.nick === nick ? "Вы" : msg.from.nick;
+      addMessage(sender, `(ЛС) ${msg.text}`, msg.from.userId === userId ? "mine private" : "other private");
+    });
 
-function addMsg(m){
-  const d = document.createElement('div');
-  d.className='msg'+(m.from===me.username ? ' mine' : '');
-  d.textContent = m.from+': '+m.text;
-  document.getElementById('messages').appendChild(d);
-  document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
-}
+    // 🔍 Поиск пользователя
+    searchBtn.onclick = () => {
+      const query = searchInput.value.trim();
+      if (!query) return;
 
-document.getElementById('exit').onclick = () => { localStorage.removeItem('slc_user'); location.href = '/'; };
-</script>
+      socket.emit("findUser", query, (res) => {
+        if (res.success) {
+          privateUser = res.user.userId;
+          privateInfo.textContent = `Личные сообщения с ${res.user.nick}`;
+          privateInfo.style.color = "#ff9800";
+        } else {
+          privateUser = null;
+          privateInfo.textContent = "❌ Пользователь не найден";
+          privateInfo.style.color = "red";
+        }
+      });
+    };
+
+    // 📤 Добавление сообщения в чат
+    function addMessage(nick, text, cls = "other") {
+      const div = document.createElement("div");
+      div.className = "msg " + cls;
+      div.textContent = `${nick}: ${text}`;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+  </script>
 </body>
 </html>

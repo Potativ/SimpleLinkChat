@@ -1,67 +1,269 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
-<title>Simple Link Chat — Вход / Регистрация</title>
-<style>
-body{font-family:Arial;background:#0f0f0f;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
-.box{width:360px;padding:20px;background:#141414;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.6)}
-h2{text-align:center;margin:0 0 12px 0}
-input{width:100%;padding:10px;margin:6px 0;border-radius:6px;border:1px solid #222;background:#0d0d0d;color:#fff}
-button{width:100%;padding:10px;margin-top:8px;background:#5865f2;border:none;border-radius:6px;color:#fff;cursor:pointer}
-.toggle{color:#9aa;cursor:pointer;text-align:center;margin-top:8px}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#222;padding:10px 14px;border-radius:8px;display:none}
-</style>
+  <meta charset="UTF-8" />
+  <title>Simple Link Chat</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f0f0f;
+      color: #fff;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    #sidebar {
+      width: 300px;
+      background: #1a1a1a;
+      border-right: 1px solid #222;
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+    }
+    #sidebar h2 {
+      text-align: center;
+      margin: 10px 0;
+    }
+    #userInfo {
+      border-top: 1px solid #333;
+      margin-top: auto;
+      padding-top: 10px;
+      font-size: 13px;
+      color: #999;
+    }
+    #chatArea {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    #messages {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .msg {
+      max-width: 70%;
+      padding: 10px;
+      border-radius: 8px;
+      background: #222;
+      word-wrap: break-word;
+    }
+    .msg.own {
+      align-self: flex-end;
+      background: #3c44ff;
+    }
+    #inputArea {
+      display: flex;
+      padding: 10px;
+      border-top: 1px solid #222;
+    }
+    #messageInput {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      background: #0d0d0d;
+      color: white;
+    }
+    #sendBtn {
+      margin-left: 8px;
+      padding: 10px 15px;
+      background: #5865f2;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+    }
+    #searchInput {
+      padding: 8px;
+      border: none;
+      border-radius: 6px;
+      background: #0d0d0d;
+      color: #fff;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    .user-result {
+      background: #222;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .user-result:hover {
+      background: #2c2c2c;
+    }
+    #auth {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      color: white;
+      z-index: 999;
+    }
+    #auth input {
+      margin: 5px;
+      padding: 8px;
+      border-radius: 6px;
+      border: none;
+      width: 220px;
+      background: #1f1f1f;
+      color: white;
+    }
+    #auth button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      background: #5865f2;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-<div class="box">
-  <h2 id="title">Войти</h2>
-  <div id="forms">
-    <input id="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Пароль">
-    <input id="nick" placeholder="Ник (для регистрации)" style="display:none">
-    <input id="username" placeholder="Юзернейм (латиница, цифры, _)" style="display:none">
-    <button id="actionBtn">Войти</button>
-    <div class="toggle" id="toggle">Нет аккаунта? Зарегистрироваться</div>
+  <div id="auth">
+    <h2>Регистрация в Simple Link Chat</h2>
+    <input id="username" placeholder="username (только латиница, цифры и _)" />
+    <input id="nick" placeholder="Ваш никнейм" />
+    <input id="avatar" placeholder="URL аватара (необязательно)" />
+    <button id="registerBtn">Продолжить</button>
   </div>
-</div>
-<div class="toast" id="toast"></div>
 
-<script>
-function showToast(t){ const el=document.getElementById('toast'); el.textContent=t; el.style.display='block'; setTimeout(()=>el.style.display='none',3000); }
+  <div id="sidebar">
+    <h2>Пользователи</h2>
+    <input id="searchInput" placeholder="Поиск по username..." />
+    <div id="results"></div>
+    <div id="userInfo"></div>
+  </div>
 
-let mode='login';
-document.getElementById('toggle').onclick = () => {
-  mode = mode==='login' ? 'register' : 'login';
-  document.getElementById('title').textContent = mode==='login' ? 'Войти' : 'Регистрация';
-  document.getElementById('actionBtn').textContent = mode==='login' ? 'Войти' : 'Зарегистрироваться';
-  document.getElementById('nick').style.display = mode==='login' ? 'none' : 'block';
-  document.getElementById('username').style.display = mode==='login' ? 'none' : 'block';
-  document.getElementById('toggle').textContent = mode==='login' ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти';
-};
+  <div id="chatArea">
+    <div id="messages"></div>
+    <div id="inputArea">
+      <input id="messageInput" placeholder="Сообщение..." />
+      <button id="sendBtn">Отправить</button>
+    </div>
+  </div>
 
-document.getElementById('actionBtn').onclick = async () => {
-  const email = document.getElementById('email').value.trim();
-  const password = document.getElementById('password').value.trim();
-  if(!email || !password) return showToast('Введите email и пароль');
-  if(mode==='login'){
-    const res = await fetch('/api/login', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,password})});
-    const j = await res.json();
-    if(res.ok){
-      localStorage.setItem('slc_user', JSON.stringify(j.user));
-      location.href = '/chat.html';
-    } else showToast(j.error || 'Ошибка');
-  } else {
-    const nick = document.getElementById('nick').value.trim();
-    const username = document.getElementById('username').value.trim();
-    const res = await fetch('/api/register', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,password,nick,username})});
-    const j = await res.json();
-    if(res.ok){
-      localStorage.setItem('slc_user', JSON.stringify(j.user));
-      location.href = '/chat.html';
-    } else showToast(j.error || 'Ошибка');
-  }
-};
-</script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let currentUser = null;
+    let currentChat = null;
+
+    const auth = document.getElementById("auth");
+    const usernameInput = document.getElementById("username");
+    const nickInput = document.getElementById("nick");
+    const avatarInput = document.getElementById("avatar");
+    const registerBtn = document.getElementById("registerBtn");
+    const searchInput = document.getElementById("searchInput");
+    const resultsEl = document.getElementById("results");
+    const userInfo = document.getElementById("userInfo");
+    const messagesEl = document.getElementById("messages");
+    const messageInput = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+
+    // --- регистрация ---
+    registerBtn.onclick = () => {
+      const username = usernameInput.value.trim();
+      if (!/^[a-zA-Z0-9_]+$/.test(username)) return alert("Только латиница, цифры и _!");
+      const nick = nickInput.value.trim() || username;
+      const avatar = avatarInput.value.trim();
+
+      currentUser = { username, nick, avatar };
+      socket.emit("register", currentUser);
+
+      localStorage.setItem("slc_user", JSON.stringify(currentUser));
+      auth.style.display = "none";
+      userInfo.innerHTML = `<b>${nick}</b><br>@${username}`;
+    };
+
+    // --- если уже зарегистрирован ---
+    window.addEventListener("load", () => {
+      const saved = localStorage.getItem("slc_user");
+      if (saved) {
+        currentUser = JSON.parse(saved);
+        auth.style.display = "none";
+        userInfo.innerHTML = `<b>${currentUser.nick}</b><br>@${currentUser.username}`;
+        socket.emit("register", currentUser);
+      }
+    });
+
+    // --- поиск ---
+    searchInput.addEventListener("input", () => {
+      const query = searchInput.value.trim();
+      socket.emit("search_user", query, (results) => {
+        resultsEl.innerHTML = "";
+        results.forEach((u) => {
+          if (u.username === currentUser?.username) return; // не показываем себя
+          const div = document.createElement("div");
+          div.className = "user-result";
+          div.innerHTML = `<b>${u.nick}</b><br>@${u.username}`;
+          div.onclick = () => openChat(u.username, u.nick);
+          resultsEl.appendChild(div);
+        });
+      });
+    });
+
+    // --- открыть чат ---
+    function openChat(username, nick) {
+      currentChat = username;
+      messagesEl.innerHTML = "";
+      document.getElementById("messages").innerHTML = `<div style='text-align:center;color:#888'>Чат с <b>@${nick}</b></div>`;
+    }
+
+    // --- отправка ---
+    sendBtn.onclick = sendMessage;
+    messageInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    function sendMessage() {
+      const text = messageInput.value.trim();
+      if (!text || !currentChat) return;
+      socket.emit("send_message", {
+        from: currentUser.username,
+        to: currentChat,
+        text
+      });
+      addMessage({ from: currentUser.username, text });
+      messageInput.value = "";
+    }
+
+    // --- приём сообщений ---
+    socket.on("receive_message", (msg) => {
+      if (
+        msg.from === currentChat ||
+        msg.from === currentUser.username
+      ) {
+        addMessage(msg);
+      }
+    });
+
+    // --- системные сообщения ---
+    socket.on("system", (txt) => {
+      const div = document.createElement("div");
+      div.style.textAlign = "center";
+      div.style.color = "#888";
+      div.textContent = txt;
+      messagesEl.appendChild(div);
+    });
+
+    function addMessage(msg) {
+      const div = document.createElement("div");
+      div.className = "msg" + (msg.from === currentUser.username ? " own" : "");
+      div.textContent = msg.text;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+  </script>
 </body>
 </html>
