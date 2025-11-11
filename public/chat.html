@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Simple Link Chat — Chat</title>
+<style>
+body{margin:0;font-family:Arial;background:#0f0f0f;color:#fff;height:100vh;display:flex}
+#sidebar{width:300px;background:#171717;padding:12px;border-right:1px solid #222;box-sizing:border-box}
+#main{flex:1;display:flex;flex-direction:column}
+#search{width:100%;padding:8px;border-radius:6px;border:none;background:#0d0d0d;color:#fff;margin-bottom:8px}
+.user-item{padding:8px;background:#1f1f1f;border-radius:6px;margin-bottom:6px;cursor:pointer}
+#messages{flex:1;padding:12px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:70%;padding:8px;border-radius:8px;background:#222}
+.msg.mine{align-self:flex-end;background:#3c44ff}
+#input{display:flex;padding:10px;border-top:1px solid #222;background:#111}
+#input input{flex:1;padding:10px;border-radius:6px;border:none;background:#0d0d0d;color:#fff}
+#input button{margin-left:8px;padding:10px 12px;border-radius:6px;border:none;background:#5865f2;color:#fff;cursor:pointer}
+.topuser{font-size:13px;color:#bbb;margin-bottom:10px}
+.exit-btn{position:fixed;right:12px;top:12px;padding:6px 8px;background:#333;border-radius:6px;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="sidebar">
+  <h3>Пользователи</h3>
+  <input id="q" placeholder="@юзер или часть" id="search" />
+  <div id="results"></div>
+  <div style="margin-top:12px" id="meinfo"></div>
+</div>
+<div id="main">
+  <div id="messages"></div>
+  <div id="input">
+    <input id="text" placeholder="Написать..." />
+    <button id="send">Отправить</button>
+  </div>
+</div>
+<div class="exit-btn" id="exit">Выйти</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+
+const me = JSON.parse(localStorage.getItem('slc_user') || 'null');
+if(!me){ location.href = '/'; throw new Error('no user'); }
+document.getElementById('meinfo').innerHTML = '<div class="topuser">'+me.nick+' (@'+me.username+')</div>';
+
+let currentChat = null;
+
+async function search(q){
+  const res = await fetch('/api/users?q='+encodeURIComponent(q));
+  const j = await res.json();
+  const el = document.getElementById('results');
+  el.innerHTML = '';
+  j.results.forEach(u=>{
+    const d = document.createElement('div');
+    d.className='user-item';
+    d.innerHTML = '<b>'+u.nick+'</b><br>@'+u.username;
+    d.onclick = ()=> openChat(u.username,u.nick);
+    el.appendChild(d);
+  });
+}
+
+document.getElementById('q').addEventListener('input', (e)=> search(e.target.value));
+
+function openChat(username,nick){
+  currentChat = username;
+  document.getElementById('messages').innerHTML = '<div style="color:#888">Чат с '+nick+' (@'+username+')</div>';
+  // load history
+  fetch('/api/messages?a='+encodeURIComponent(me.username)+'&b='+encodeURIComponent(username)).then(r=>r.json()).then(j=>{
+    j.messages.forEach(m => addMsg(m));
+  });
+}
+
+// register socket presence
+socket.emit('register_socket', me);
+
+// receive private
+socket.on('receive_private', (m) => {
+  addMsg(m);
+});
+
+// send
+document.getElementById('send').onclick = () => {
+  const txt = document.getElementById('text').value.trim();
+  if(!txt || !currentChat) return;
+  socket.emit('send_private', { from: me.username, to: currentChat, text: txt });
+  document.getElementById('text').value='';
+};
+
+function addMsg(m){
+  const d = document.createElement('div');
+  d.className='msg'+(m.from===me.username ? ' mine' : '');
+  d.textContent = m.from+': '+m.text;
+  document.getElementById('messages').appendChild(d);
+  document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+}
+
+document.getElementById('exit').onclick = () => { localStorage.removeItem('slc_user'); location.href = '/'; };
+</script>
+</body>
+</html>

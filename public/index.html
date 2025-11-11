@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Simple Link Chat — Вход / Регистрация</title>
+<style>
+body{font-family:Arial;background:#0f0f0f;color:#fff;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+.box{width:360px;padding:20px;background:#141414;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.6)}
+h2{text-align:center;margin:0 0 12px 0}
+input{width:100%;padding:10px;margin:6px 0;border-radius:6px;border:1px solid #222;background:#0d0d0d;color:#fff}
+button{width:100%;padding:10px;margin-top:8px;background:#5865f2;border:none;border-radius:6px;color:#fff;cursor:pointer}
+.toggle{color:#9aa;cursor:pointer;text-align:center;margin-top:8px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#222;padding:10px 14px;border-radius:8px;display:none}
+</style>
+</head>
+<body>
+<div class="box">
+  <h2 id="title">Войти</h2>
+  <div id="forms">
+    <input id="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Пароль">
+    <input id="nick" placeholder="Ник (для регистрации)" style="display:none">
+    <input id="username" placeholder="Юзернейм (латиница, цифры, _)" style="display:none">
+    <button id="actionBtn">Войти</button>
+    <div class="toggle" id="toggle">Нет аккаунта? Зарегистрироваться</div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+function showToast(t){ const el=document.getElementById('toast'); el.textContent=t; el.style.display='block'; setTimeout(()=>el.style.display='none',3000); }
+
+let mode='login';
+document.getElementById('toggle').onclick = () => {
+  mode = mode==='login' ? 'register' : 'login';
+  document.getElementById('title').textContent = mode==='login' ? 'Войти' : 'Регистрация';
+  document.getElementById('actionBtn').textContent = mode==='login' ? 'Войти' : 'Зарегистрироваться';
+  document.getElementById('nick').style.display = mode==='login' ? 'none' : 'block';
+  document.getElementById('username').style.display = mode==='login' ? 'none' : 'block';
+  document.getElementById('toggle').textContent = mode==='login' ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти';
+};
+
+document.getElementById('actionBtn').onclick = async () => {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  if(!email || !password) return showToast('Введите email и пароль');
+  if(mode==='login'){
+    const res = await fetch('/api/login', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,password})});
+    const j = await res.json();
+    if(res.ok){
+      localStorage.setItem('slc_user', JSON.stringify(j.user));
+      location.href = '/chat.html';
+    } else showToast(j.error || 'Ошибка');
+  } else {
+    const nick = document.getElementById('nick').value.trim();
+    const username = document.getElementById('username').value.trim();
+    const res = await fetch('/api/register', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({email,password,nick,username})});
+    const j = await res.json();
+    if(res.ok){
+      localStorage.setItem('slc_user', JSON.stringify(j.user));
+      location.href = '/chat.html';
+    } else showToast(j.error || 'Ошибка');
+  }
+};
+</script>
+</body>
+</html>
