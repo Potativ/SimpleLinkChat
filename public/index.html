@@ -119,7 +119,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyD53xU1Kckb9eISmk7lNZqVtyTHrPLUhZM",
@@ -146,25 +146,17 @@
     const title = document.getElementById("title");
     const langSwitch = document.getElementById("langSwitch");
 
-    function showToast(msg, ok=true){
+    function showToast(msg, ok = true) {
       toast.textContent = msg;
       toast.style.backgroundColor = ok ? "#2ecc71" : "#e74c3c";
       toast.classList.add("show");
-      setTimeout(()=>toast.classList.remove("show"),3000);
+      setTimeout(() => toast.classList.remove("show"), 3000);
     }
 
     toggle.onclick = () => {
       isLogin = !isLogin;
       usernameEl.style.display = isLogin ? "none" : "inline-block";
-      if(isLogin){
-        title.textContent = currentLang === "ru" ? "Вход в Simple Link Chat" : "Login to Simple Link Chat";
-        btn.textContent = currentLang === "ru" ? "Войти" : "Login";
-        toggle.textContent = currentLang === "ru" ? "Нет аккаунта? Зарегистрироваться" : "No account? Register";
-      } else {
-        title.textContent = currentLang === "ru" ? "Регистрация в Simple Link Chat" : "Sign up to Simple Link Chat";
-        btn.textContent = currentLang === "ru" ? "Зарегистрироваться" : "Sign Up";
-        toggle.textContent = currentLang === "ru" ? "Уже есть аккаунт? Войти" : "Already have an account? Login";
-      }
+      updateLangTexts();
     };
 
     btn.onclick = async () => {
@@ -172,41 +164,46 @@
       const pass = passEl.value.trim();
       const username = usernameEl.value.trim();
 
-      if (!email || !pass) 
+      if (!email || !pass)
         return showToast(currentLang === "ru" ? "Введите email и пароль" : "Enter email and password", false);
 
       try {
         if (isLogin) {
           const userCred = await signInWithEmailAndPassword(auth, email, pass);
-          const userDoc = await getDoc(doc(db, "users", userCred.user.uid));
+          console.log("✅ Вход выполнен:", userCred.user.uid);
 
-          if (userDoc.exists()) {
-            localStorage.setItem("slc_username", userDoc.data().username);
+          // Проверяем, существует ли файл chat.html
+          const res = await fetch("chat.html");
+          if (res.ok) {
+            console.log("🔗 Переход на chat.html...");
+            window.location.href = "chat.html";
+          } else {
+            console.warn("⚠️ chat.html не найден. Проверь структуру проекта.");
+            btn.style.backgroundColor = "#e74c3c";
+            showToast("⚠️ chat.html не найден!", false);
           }
 
-          showToast(currentLang === "ru" ? "✅ Успешный вход!" : "✅ Login successful!");
-          window.location.href = "chat.html";
         } else {
-          if (!username) return showToast(currentLang === "ru" ? "Введите юзернейм" : "Enter username", false);
+          if (!username)
+            return showToast(currentLang === "ru" ? "Введите юзернейм" : "Enter username", false);
 
           const userCred = await createUserWithEmailAndPassword(auth, email, pass);
           await sendEmailVerification(userCred.user);
 
           await setDoc(doc(db, "users", userCred.user.uid), {
             username: username,
-            email: email,
             createdAt: serverTimestamp()
           });
 
-          localStorage.setItem("slc_username", username);
-          showToast(currentLang === "ru" ? "📩 Код подтверждения отправлен на почту!" : "📩 Verification email sent!");
+          showToast(currentLang === "ru" ? "📩 Код подтверждения отправлен!" : "📩 Verification email sent!");
         }
       } catch (err) {
+        console.error("Ошибка входа:", err);
         showToast(err.message, false);
       }
     };
 
-    // 🏃‍♀️ кнопка "выйти" убегает
+    // 🏃 Кнопка "выйти" убегает
     const escapeBtn = document.getElementById("escapeBtn");
     escapeBtn.addEventListener("mouseover", () => {
       const randX = Math.random() * (window.innerWidth - 80);
@@ -215,9 +212,13 @@
       escapeBtn.style.top = randY + "px";
     });
 
-    // 🌐 переключатель языка
+    // 🌐 Переключатель языка
     langSwitch.onclick = () => {
       currentLang = currentLang === "ru" ? "en" : "ru";
+      updateLangTexts();
+    };
+
+    function updateLangTexts() {
       langSwitch.textContent = currentLang === "ru" ? "🇷🇺" : "🇬🇧";
       if (isLogin) {
         title.textContent = currentLang === "ru" ? "Вход в Simple Link Chat" : "Login to Simple Link Chat";
@@ -228,7 +229,9 @@
         btn.textContent = currentLang === "ru" ? "Зарегистрироваться" : "Sign Up";
         toggle.textContent = currentLang === "ru" ? "Уже есть аккаунт? Войти" : "Already have an account? Login";
       }
-    };
+    }
+
+    updateLangTexts();
   </script>
 </body>
 </html>
