@@ -1,398 +1,265 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <title>Simple Link Chat — Чаты</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    :root{ --bg:#0f0f0f;--panel:#1a1a1a;--muted:#888;--accent:#5865f2; }
-    *{box-sizing:border-box}
-    body{ margin:0;height:100vh;display:flex;font-family:Inter, Arial, sans-serif;background:var(--bg);color:#fff;-webkit-font-smoothing:antialiased; }
-
-    /* sidebar */
-    #sidebar{ width:320px; background:var(--panel); border-right:1px solid #232323; display:flex; flex-direction:column; padding:14px; gap:12px; }
-    #topbar{ display:flex; gap:8px; align-items:center; justify-content:space-between }
-    #topbar h2{ margin:0; font-size:18px }
-    #createChatBtn, #settings-btn{ background:var(--accent); border:none; color:#fff; padding:8px 10px; border-radius:8px; cursor:pointer; font-size:14px; }
-    #settings-btn{ background:#444; padding:8px }
-
-    #searchRow{ display:flex; gap:8px; align-items:center }
-    #searchInput{ flex:1; padding:8px; border-radius:8px; border:1px solid #222; background:#0d0d0d; color:#fff }
-    #searchBtn{ padding:8px 10px; border-radius:8px; border:none; background:#2b2b2b; color:#fff; cursor:pointer }
-
-    #chatList{ flex:1; overflow:auto; padding-right:6px }
-    .chat-item{ display:flex; align-items:center; gap:10px; padding:10px; border-radius:8px; cursor:pointer; transition:background .12s; }
-    .chat-item:hover{ background:#232323 }
-    .chat-item.active{ background:#2b2b2b }
-    .avatar{ width:40px; height:40px; border-radius:50%; flex:0 0 40px; display:flex; align-items:center; justify-content:center; background:var(--accent); font-weight:700; color:#fff; font-size:16px; overflow:hidden; }
-    .avatar img{ width:100%; height:100%; object-fit:cover; border-radius:50% }
-    .chat-name{ font-size:15px }
-    .chat-meta{ font-size:12px; color:var(--muted) }
-
-    /* chat area */
-    #chatWindow{ flex:1; display:flex; flex-direction:column }
-    header{ height:64px; background:#131313; border-bottom:1px solid #222; display:flex; align-items:center; padding:0 16px; gap:12px }
-    header .title{ font-weight:600 }
-    #messages{ flex:1; overflow:auto; padding:18px; display:flex; flex-direction:column; gap:10px }
-    .msg{ max-width:72%; padding:10px 12px; border-radius:10px; background:#222; position:relative; word-break:break-word }
-    .msg.own{ background:#3c44ff; align-self:flex-end }
-    .msg .meta{ font-size:11px; color:var(--muted); margin-top:6px; text-align:right }
-    #inputArea{ display:flex; gap:10px; padding:12px; border-top:1px solid #222; background:#111 }
-    #messageInput{ flex:1; padding:10px; border-radius:8px; border:1px solid #222; background:#0d0d0d; color:#fff }
-    #sendBtn{ background:var(--accent); border:none; padding:10px 14px; border-radius:8px; color:#fff; cursor:pointer }
-
-    /* settings modal */
-    #settings-modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.5); z-index:50 }
-    #settings-box{ background:#121212; border-radius:10px; padding:18px; width:320px }
-    #settings-box h3{ margin:0 0 10px 0 }
-    #close-settings{ margin-top:12px; width:100%; padding:10px; border-radius:8px; border:none; background:var(--accent); color:#fff; cursor:pointer }
-
-    /* search results */
-    #searchResults{ margin-top:6px; display:none; flex-direction:column; gap:6px }
-    .result-item{ padding:8px; background:#151515; border-radius:8px; display:flex; align-items:center; justify-content:space-between; gap:10px }
-
-    .muted{ color:var(--muted); font-size:13px }
-    .small{ font-size:12px; color:var(--muted) }
-  </style>
+<meta charset="UTF-8">
+<title>Simple Link Chat — Чаты</title>
+<style>
+:root {
+  --bg: #0f0f0f;
+  --panel: #1a1a1a;
+  --accent: #5865f2;
+  --muted: #888;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  display: flex;
+  height: 100vh;
+  background: var(--bg);
+  color: #fff;
+  font-family: Arial, sans-serif;
+}
+/* Сайдбар */
+#sidebar {
+  width: 280px;
+  background: var(--panel);
+  border-right: 1px solid #222;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+}
+#topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+#search {
+  background: #0d0d0d;
+  border: 1px solid #333;
+  color: white;
+  border-radius: 8px;
+  padding: 8px;
+  width: 100%;
+  margin-top: 10px;
+}
+#chatList {
+  flex: 1;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+.chat-item {
+  padding: 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.chat-item:hover { background: #232323; }
+.chat-item.active { background: #333; }
+/* Окно чата */
+#chatWindow {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+header {
+  background: #131313;
+  border-bottom: 1px solid #222;
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+#messages {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.msg {
+  background: #222;
+  padding: 10px 12px;
+  border-radius: 8px;
+  max-width: 70%;
+  word-wrap: break-word;
+}
+.msg.own { align-self: flex-end; background: var(--accent); }
+.msg .meta { font-size: 11px; color: var(--muted); margin-top: 5px; }
+#inputArea {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid #222;
+  background: #111;
+}
+#messageInput {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: #0d0d0d;
+  color: white;
+}
+#sendBtn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+/* Настройки */
+#settingsModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#settingsBox {
+  background: #121212;
+  padding: 18px;
+  border-radius: 10px;
+  width: 320px;
+}
+#settingsBox input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  border-radius: 8px;
+  border: 1px solid #333;
+  background: #0d0d0d;
+  color: white;
+}
+button { cursor: pointer; }
+</style>
 </head>
 <body>
 
-  <div id="sidebar">
-    <div id="topbar">
-      <h2>Чаты</h2>
-      <div style="display:flex;gap:8px">
-        <button id="createChatBtn">➕ Создать</button>
-        <button id="settings-btn">⚙️</button>
-      </div>
-    </div>
-
-    <!-- Поиск по userId (юз) -->
-    <div id="searchRow">
-      <input id="searchInput" placeholder="Найти по юзу (userId)..." />
-      <button id="searchBtn">Поиск</button>
-    </div>
-    <div id="searchResults"></div>
-
-    <div id="chatList" aria-label="Список чатов"></div>
-    <div class="small muted">Подсказка: нажмите на чат, чтобы открыть</div>
+<!-- Сайдбар -->
+<div id="sidebar">
+  <div id="topbar">
+    <h3>Чаты</h3>
+    <button id="settingsBtn">⚙️</button>
   </div>
+  <input id="search" placeholder="🔍 Поиск по @username или ID">
+  <div id="chatList"></div>
+</div>
 
-  <div id="chatWindow">
-    <header>
-      <div class="title" id="chatTitle">—</div>
-      <div style="margin-left:auto" class="muted small" id="userNick"></div>
-    </header>
-
-    <div id="messages"></div>
-
-    <div id="inputArea">
-      <input id="messageInput" placeholder="Напиши сообщение..." />
-      <button id="sendBtn">Отправить</button>
-    </div>
+<!-- Основное окно -->
+<div id="chatWindow">
+  <header>
+    <div id="chatTitle">—</div>
+    <div id="myInfo" style="font-size:13px; color:#888;"></div>
+  </header>
+  <div id="messages"></div>
+  <div id="inputArea">
+    <input id="messageInput" placeholder="Введите сообщение...">
+    <button id="sendBtn">Отправить</button>
   </div>
+</div>
 
-  <!-- settings modal -->
-  <div id="settings-modal">
-    <div id="settings-box">
-      <h3>Настройки</h3>
-      <div>
-        <label class="small">Твой ник:</label><br>
-        <input id="nickInput" style="width:100%;padding:8px;border-radius:8px;border:1px solid #222;background:#0d0d0d;color:#fff" />
-      </div>
-      <div style="margin-top:8px">
-        <label class="small">Аватар (URL)</label><br>
-        <input id="avatarInput" style="width:100%;padding:8px;border-radius:8px;border:1px solid #222;background:#0d0d0d;color:#fff" placeholder="https://..." />
-      </div>
-      <button id="close-settings">Сохранить и закрыть</button>
-    </div>
+<!-- Настройки -->
+<div id="settingsModal">
+  <div id="settingsBox">
+    <h3>Мой профиль</h3>
+    <label>Никнейм:</label>
+    <input id="nickInput">
+    <label>Юзернейм (@):</label>
+    <input id="usernameInput" readonly>
+    <label>Мой ID:</label>
+    <input id="userIdInput" readonly>
+    <button id="closeSettings" style="margin-top:10px;width:100%;padding:8px;border:none;background:var(--accent);color:white;border-radius:8px;">Закрыть</button>
   </div>
+</div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-  // ---------- Простая модель хранения ----------
-  const STORAGE_KEY = 'slc_chats_v2';
-  // структура: { chats: { chatId: { title, avatar, isPrivate, peerUserId, messages:[] } }, currentNick, currentAvatar, currentChat, userId, usernameLastSetTime }
-  const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || {
-    chats: {},
-    currentNick: null,
-    currentAvatar: null,
-    currentChat: null,
-    userId: null,
-    usernameLastSetTime: 0 // timestamp для ограничения смены user (если надо)
-  };
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
 
-  // ---------- DOM ----------
-  const chatListEl = document.getElementById('chatList');
-  const createChatBtn = document.getElementById('createChatBtn');
-  const settingsBtn = document.getElementById('settings-btn');
-  const chatTitle = document.getElementById('chatTitle');
-  const userNickEl = document.getElementById('userNick');
-  const messagesEl = document.getElementById('messages');
-  const messageInput = document.getElementById('messageInput');
-  const sendBtn = document.getElementById('sendBtn');
+// ---------- Данные ----------
+let data = JSON.parse(localStorage.getItem("slc_user") || "null");
+if (!data) {
+  alert("Ошибка: вы не вошли в систему!");
+  window.location.href = "index.html";
+}
 
-  const settingsModal = document.getElementById('settings-modal');
-  const nickInput = document.getElementById('nickInput');
-  const avatarInput = document.getElementById('avatarInput');
-  const closeSettings = document.getElementById('close-settings');
+// ---------- Элементы ----------
+const chatList = document.getElementById("chatList");
+const messagesEl = document.getElementById("messages");
+const messageInput = document.getElementById("messageInput");
+const sendBtn = document.getElementById("sendBtn");
+const searchBox = document.getElementById("search");
+const settingsBtn = document.getElementById("settingsBtn");
+const settingsModal = document.getElementById("settingsModal");
+const nickInput = document.getElementById("nickInput");
+const usernameInput = document.getElementById("usernameInput");
+const userIdInput = document.getElementById("userIdInput");
+const closeSettings = document.getElementById("closeSettings");
+const chatTitle = document.getElementById("chatTitle");
+const myInfo = document.getElementById("myInfo");
 
-  const searchInput = document.getElementById('searchInput');
-  const searchBtn = document.getElementById('searchBtn');
-  const searchResults = document.getElementById('searchResults');
+// ---------- Подключение ----------
+socket.emit("join", { userId: data.userId, nick: data.nick, avatar: data.avatar });
 
-  // ---------- helpers ----------
-  function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
-  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
-  function escapeHtml(s){ return String(s || '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
+myInfo.textContent = `@${data.username}`;
+nickInput.value = data.nick;
+usernameInput.value = data.username;
+userIdInput.value = data.userId;
 
-  // ---------- ensure userId ----------
-  if (!data.userId) {
-    // генерируем короткий userId (можно заменить на регистрацию)
-    data.userId = 'u' + uid();
-  }
-  // ensure default nick
-  if (!data.currentNick) data.currentNick = 'Гость' + data.userId.slice(-4);
-  // ensure favourite chat
-  if (!data.currentChat) {
-    if (!data.chats['Избранное']) data.chats['Избранное'] = { title: 'Избранное', avatar: null, isPrivate:false, peerUserId:null, messages: [] };
-    data.currentChat = 'Избранное';
-  }
-  // expose for debugging
-  window.slcData = data;
+// ---------- Сообщения ----------
+sendBtn.onclick = () => {
+  const text = messageInput.value.trim();
+  if (!text) return;
+  if (!data.currentChat) return alert("Сначала выберите чат!");
+  socket.emit("privateMessage", { toUserId: data.currentChat, text });
+  messageInput.value = "";
+};
 
-  // ---------- socket ----------
-  // если сайт развернут на том же домене, то io() автоматически подключится
-  const socket = io();
+socket.on("privateMessage", (msg) => {
+  renderMessage(msg);
+});
 
-  socket.on('connect', () => {
-    console.log('socket connected', socket.id);
-    // отправляем серверу нашу инфу
-    socket.emit('join', { userId: data.userId, nick: data.currentNick, avatar: data.currentAvatar });
-  });
+function renderMessage(msg) {
+  const div = document.createElement("div");
+  div.className = "msg" + (msg.from.userId === data.userId ? " own" : "");
+  div.innerHTML = `
+    <div><strong>${msg.from.nick}</strong></div>
+    <div>${msg.text}</div>
+    <div class="meta">${new Date(msg.time).toLocaleTimeString()}</div>
+  `;
+  messagesEl.appendChild(div);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
 
-  // общие сообщения (если используются)
-  socket.on('message', (msg) => {
-    // сюда можно пушить в общий чат (если у тебя есть общий канал)
-    const chat = data.chats['Общий'] || (data.chats['Общий'] = { title:'Общий', avatar:null, isPrivate:false, peerUserId:null, messages:[] });
-    chat.messages.push({ id: msg.id || uid(), nick: msg.nick, text: msg.text, time: msg.time, own: msg.id === socket.id });
-    save();
-    renderAll();
-  });
-
-  // входящее личное сообщение
-  socket.on('privateMessage', (m) => {
-    // m: { from: { userId, nick }, text, time }
-    const fromId = m.from.userId;
-    const peerKey = privateChatKey(data.userId, fromId);
-    // создаём чат если нет
-    if (!data.chats[peerKey]) {
-      data.chats[peerKey] = { title: m.from.nick || 'Пользователь', avatar: null, isPrivate:true, peerUserId: fromId, messages: [] };
-    }
-    const chat = data.chats[peerKey];
-    chat.messages.push({ id: uid(), nick: m.from.nick, text: m.text, time: m.time, own: false });
-    save();
-    renderAll();
-  });
-
-  // поиск: используем callback от сервера, сервер возвращает { success, user }
-  // реализовано на сервере (socket.on('findUser', ...))
-  // ---------- UI renderers ----------
-  function privateChatKey(myId, otherId){
-    // ключ для приватного чата — фиксированное имя, чтобы при создании с обеих сторон совпадало
-    // используем сортированный порядок, чтобы ключ был одинаков у обоих юзеров
-    const a = [String(myId), String(otherId)].sort().join('__dm__');
-    return 'dm__' + a;
-  }
-
-  function renderChatList(){
-    chatListEl.innerHTML = '';
-    Object.keys(data.chats).forEach(name => {
-      const meta = data.chats[name];
-      const item = document.createElement('div');
-      item.className = 'chat-item' + (name === data.currentChat ? ' active' : '');
-      // avatar
-      const av = document.createElement('div'); av.className = 'avatar';
-      if (meta && meta.avatar) {
-        const img = document.createElement('img'); img.src = meta.avatar; av.appendChild(img);
+// ---------- Поиск ----------
+searchBox.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    const query = searchBox.value.trim();
+    if (!query) return;
+    socket.emit("findUser", query, (res) => {
+      if (res.success) {
+        alert(`Найден: ${res.user.nick} (@${res.userId})`);
+        data.currentChat = res.user.userId;
+        chatTitle.textContent = res.user.nick;
+        localStorage.setItem("slc_user", JSON.stringify(data));
       } else {
-        // если приватный и есть peerUserId, берем первую букву title
-        av.textContent = meta.title && meta.title[0] ? meta.title[0].toUpperCase() : '?';
-      }
-      item.appendChild(av);
-      const info = document.createElement('div');
-      const title = document.createElement('div'); title.className='chat-name';
-      title.textContent = meta.title || name;
-      info.appendChild(title);
-      if (meta.isPrivate && meta.peerUserId) {
-        const small = document.createElement('div'); small.className = 'chat-meta'; small.textContent = 'Приватный';
-        info.appendChild(small);
-      }
-      item.appendChild(info);
-      item.onclick = () => { data.currentChat = name; save(); renderAll(); };
-      chatListEl.appendChild(item);
-    });
-  }
-
-  function renderMessages(){
-    messagesEl.innerHTML = '';
-    const chat = data.chats[data.currentChat];
-    if (!chat) return;
-    chat.messages.forEach(m => {
-      const b = document.createElement('div');
-      b.className = 'msg' + (m.own ? ' own' : '');
-      b.innerHTML = `<div style="font-weight:600">${escapeHtml(m.nick)}</div>
-                     <div style="margin-top:6px">${escapeHtml(m.text)}</div>
-                     <div class="meta">${new Date(m.time).toLocaleString()}</div>`;
-      // право-клик удалить своё сообщение
-      if (m.own) {
-        b.addEventListener('contextmenu', (e) => {
-          e.preventDefault();
-          if (confirm('Удалить это сообщение?')) {
-            deleteMessageById(data.currentChat, m.id);
-          }
-        });
-      }
-      messagesEl.appendChild(b);
-    });
-    messagesEl.scrollTop = messagesEl.scrollHeight;
-  }
-
-  function renderAll(){
-    renderChatList();
-    chatTitle.textContent = data.chats[data.currentChat] ? data.chats[data.currentChat].title : '—';
-    userNickEl.textContent = data.currentNick || '';
-    renderMessages();
-    // hide search results if empty
-    if (!searchResults.hasChildNodes()) searchResults.style.display = 'none';
-  }
-
-  // ---------- actions ----------
-  createChatBtn.addEventListener('click', () => {
-    const name = prompt('Название нового чата:');
-    if (!name) return alert('Название не задано');
-    if (data.chats[name]) return alert('Чат с таким именем уже существует');
-    const wantAvatar = confirm('Загрузить URL аватарки для чата? (Отмена — первая буква имени)');
-    let avatar = null;
-    if (wantAvatar) {
-      avatar = prompt('Вставьте прямой URL изображения (https://...jpg):');
-      if (avatar && !isValidUrl(avatar)) { alert('Неверный URL — аватар не будет установлен'); avatar = null; }
-    }
-    data.chats[name] = { title: name, avatar, isPrivate:false, peerUserId:null, messages: [] };
-    data.currentChat = name;
-    save(); renderAll();
-  });
-
-  settingsBtn.addEventListener('click', () => {
-    settingsModal.style.display = 'flex';
-    nickInput.value = data.currentNick || '';
-    avatarInput.value = data.currentAvatar || '';
-  });
-
-  closeSettings.addEventListener('click', () => {
-    const newNick = nickInput.value.trim() || data.currentNick || 'Гость';
-    const newAvatar = avatarInput.value.trim() || null;
-    data.currentNick = newNick;
-    data.currentAvatar = newAvatar;
-    // отправляем обновлённый ник на сервер
-    socket.emit('join', { userId: data.userId, nick: data.currentNick, avatar: data.currentAvatar });
-    userNickEl.textContent = data.currentNick;
-    settingsModal.style.display = 'none';
-    save(); renderAll();
-  });
-
-  // отправка сообщения (работает и для приватных чатов)
-  sendBtn.addEventListener('click', sendMessage);
-  messageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMessage(); });
-
-  function sendMessage(){
-    const text = messageInput.value.trim();
-    if (!text) return;
-    const chat = data.chats[data.currentChat];
-    if (!chat) return alert('Нет выбранного чата');
-
-    const now = Date.now();
-    // если приватный — отправляем privateMessage на сервер
-    if (chat.isPrivate && chat.peerUserId) {
-      // emit privateMessage
-      socket.emit('privateMessage', { toUserId: chat.peerUserId, text });
-      // сохраняем локально
-      chat.messages.push({ id: uid(), nick: data.currentNick, text, time: now, own: true });
-      save();
-      messageInput.value = '';
-      renderMessages();
-      return;
-    }
-
-    // иначе — локальное/групповое сообщение (в этой реализации оно остаётся локальным)
-    const message = { id: uid(), nick: data.currentNick, text, time: now, own: true };
-    chat.messages.push(message);
-    save();
-    messageInput.value = '';
-    renderMessages();
-    // если у тебя есть серверный общий канал — можно сделать socket.emit('message', text);
-  }
-
-  // delete by id
-  function deleteMessageById(chatName, id){
-    const chat = data.chats[chatName];
-    if (!chat) return;
-    chat.messages = chat.messages.filter(m => m.id !== id);
-    save();
-    renderMessages();
-  }
-
-  // ---------- поиск пользователя ----------
-  searchBtn.addEventListener('click', () => {
-    const q = searchInput.value.trim();
-    if (!q) return alert('Введите userId для поиска');
-    searchResults.innerHTML = ''; searchResults.style.display = 'flex';
-    // emit with callback
-    socket.emit('findUser', q, (res) => {
-      searchResults.innerHTML = '';
-      if (res && res.success && res.user) {
-        const u = res.user;
-        const item = document.createElement('div'); item.className = 'result-item';
-        const left = document.createElement('div'); left.style.display = 'flex'; left.style.gap = '8px'; left.style.alignItems = 'center';
-        const av = document.createElement('div'); av.className = 'avatar'; av.textContent = (u.nick && u.nick[0]) ? u.nick[0].toUpperCase() : '?';
-        left.appendChild(av);
-        const info = document.createElement('div'); info.innerHTML = `<div style="font-weight:600">${escapeHtml(u.nick || u.userId)}</div><div class="muted small">${escapeHtml(u.userId)}</div>`;
-        left.appendChild(info);
-        item.appendChild(left);
-        const btn = document.createElement('button'); btn.textContent = 'Написать'; btn.style.cursor = 'pointer'; btn.onclick = () => {
-          openPrivateChatWith(u.userId, u.nick);
-          searchResults.innerHTML = ''; searchResults.style.display = 'none'; searchInput.value = '';
-        };
-        item.appendChild(btn);
-        searchResults.appendChild(item);
-      } else {
-        const no = document.createElement('div'); no.className = 'result-item'; no.textContent = 'Пользователь не найден';
-        searchResults.appendChild(no);
+        alert("Пользователь не найден");
       }
     });
-  });
-
-  function openPrivateChatWith(otherUserId, otherNick){
-    const key = privateChatKey(data.userId, otherUserId);
-    if (!data.chats[key]) {
-      data.chats[key] = { title: otherNick || otherUserId, avatar: null, isPrivate:true, peerUserId: otherUserId, messages: [] };
-    }
-    data.currentChat = key;
-    save(); renderAll();
   }
+});
 
-  // helper validation for URL
-  function isValidUrl(s){
-    try { new URL(s); return true; } catch { return false; }
-  }
+// ---------- Настройки ----------
+settingsBtn.onclick = () => { settingsModal.style.display = "flex"; };
+closeSettings.onclick = () => { settingsModal.style.display = "none"; };
 
-  // click outside modal to close
-  window.addEventListener('click', (e) => { if (e.target === settingsModal) settingsModal.style.display = 'none'; });
-
-  // initial render
-  renderAll();
-
-  // expose for debugging
-  window.slcData = data;
-  </script>
+// ---------- Инициализация ----------
+if (!data.currentChat) {
+  chatTitle.textContent = "Выберите собеседника";
+}
+</script>
 </body>
 </html>
