@@ -118,8 +118,19 @@
   <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+    import { 
+      getAuth, 
+      createUserWithEmailAndPassword, 
+      signInWithEmailAndPassword, 
+      sendEmailVerification 
+    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-auth.js";
+    import { 
+      getFirestore, 
+      doc, 
+      setDoc, 
+      getDoc, 
+      serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyD53xU1Kckb9eISmk7lNZqVtyTHrPLUhZM",
@@ -146,17 +157,17 @@
     const title = document.getElementById("title");
     const langSwitch = document.getElementById("langSwitch");
 
-    function showToast(msg, ok=true){
+    function showToast(msg, ok = true) {
       toast.textContent = msg;
       toast.style.backgroundColor = ok ? "#2ecc71" : "#e74c3c";
       toast.classList.add("show");
-      setTimeout(()=>toast.classList.remove("show"),3000);
+      setTimeout(() => toast.classList.remove("show"), 3000);
     }
 
     toggle.onclick = () => {
       isLogin = !isLogin;
       usernameEl.style.display = isLogin ? "none" : "inline-block";
-      if(isLogin){
+      if (isLogin) {
         title.textContent = currentLang === "ru" ? "Вход в Simple Link Chat" : "Login to Simple Link Chat";
         btn.textContent = currentLang === "ru" ? "Войти" : "Login";
         toggle.textContent = currentLang === "ru" ? "Нет аккаунта? Зарегистрироваться" : "No account? Register";
@@ -172,12 +183,16 @@
       const pass = passEl.value.trim();
       const username = usernameEl.value.trim();
 
-      if (!email || !pass) 
+      if (!email || !pass)
         return showToast(currentLang === "ru" ? "Введите email и пароль" : "Enter email and password", false);
 
       try {
         if (isLogin) {
-          await signInWithEmailAndPassword(auth, email, pass);
+          const userCred = await signInWithEmailAndPassword(auth, email, pass);
+          const userDoc = await getDoc(doc(db, "users", userCred.user.uid));
+          if (userDoc.exists()) {
+            localStorage.setItem("slc_username", userDoc.data().username);
+          }
           showToast(currentLang === "ru" ? "✅ Успешный вход!" : "✅ Login successful!");
           window.location.href = "chat.html";
         } else {
@@ -191,6 +206,7 @@
             lastChange: serverTimestamp()
           });
 
+          localStorage.setItem("slc_username", username);
           showToast(currentLang === "ru" ? "📩 Код подтверждения отправлен на почту!" : "📩 Verification email sent!");
         }
       } catch (err) {
