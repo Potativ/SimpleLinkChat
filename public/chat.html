@@ -1,173 +1,302 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <title>Чат | Simple Link Chat</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #0f0f0f;
-      color: white;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-    #chat {
-      flex: 1;
-      overflow-y: auto;
-      padding: 15px;
-    }
-    #message-input {
-      display: flex;
-      padding: 10px;
-      background-color: #1a1a1a;
-    }
-    #message {
-      flex: 1;
-      padding: 10px;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-    }
-    button {
-      margin-left: 8px;
-      padding: 10px 15px;
-      background-color: #5865f2;
-      border: none;
-      border-radius: 6px;
-      color: white;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    button:hover {
-      background-color: #4752c4;
-    }
-    #search-container {
-      background-color: #1a1a1a;
-      padding: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    #search-input {
-      flex: 1;
-      padding: 8px;
-      border-radius: 6px;
-      border: none;
-      font-size: 16px;
-    }
-    #private {
-      font-size: 14px;
-      color: #aaa;
-      margin-left: 10px;
-    }
-    .msg {
-      padding: 8px;
-      margin: 5px 0;
-      border-radius: 6px;
-      max-width: 70%;
-      line-height: 1.4em;
-    }
-    .mine {
-      background-color: #3a3a3a;
-      align-self: flex-end;
-    }
-    .other {
-      background-color: #222;
-      align-self: flex-start;
-    }
-    .private {
-      border: 1px solid #ff9800;
-    }
-  </style>
+<meta charset="utf-8" />
+<title>Simple Link Chat — Чаты</title>
+<style>
+:root{--bg:#0f0f0f;--panel:#1a1a1a;--muted:#888;--accent:#5865f2;}
+*{box-sizing:border-box}
+body{
+  margin:0;height:100vh;display:flex;
+  font-family:Inter, Arial, sans-serif;
+  background:var(--bg);color:#fff;
+  -webkit-font-smoothing:antialiased;
+}
+/* sidebar */
+#sidebar{width:280px;background:var(--panel);border-right:1px solid #232323;
+display:flex;flex-direction:column;padding:14px;gap:12px;}
+#topbar{display:flex;gap:8px;align-items:center;justify-content:space-between}
+#topbar h2{margin:0;font-size:18px}
+#createChatBtn,#settings-btn{
+  background:var(--accent);border:none;color:#fff;
+  padding:8px 10px;border-radius:8px;cursor:pointer;font-size:14px;
+}
+#settings-btn{background:#444;padding:8px}
+#searchBox{
+  background:#0d0d0d;border:1px solid #222;border-radius:8px;
+  color:#fff;padding:8px;width:100%;
+}
+#chatList{flex:1;overflow:auto;padding-right:6px}
+.chat-item{display:flex;align-items:center;gap:10px;
+  padding:10px;border-radius:8px;cursor:pointer;
+  transition:background .12s;}
+.chat-item:hover{background:#232323}
+.chat-item.active{background:#2b2b2b}
+.avatar{width:40px;height:40px;border-radius:50%;flex:0 0 40px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--accent);font-weight:700;color:#fff;font-size:16px;overflow:hidden;}
+.avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.chat-name{font-size:15px}
+.chat-meta{font-size:12px;color:var(--muted)}
+/* chat area */
+#chatWindow{flex:1;display:flex;flex-direction:column}
+header{height:64px;background:#131313;border-bottom:1px solid #222;
+  display:flex;align-items:center;padding:0 16px;gap:12px}
+header .title{font-weight:600}
+#messages{flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:72%;padding:10px 12px;border-radius:10px;background:#222;position:relative;word-break:break-word}
+.msg.own{background:#3c44ff;align-self:flex-end}
+.msg .meta{font-size:11px;color:var(--muted);margin-top:6px;text-align:right}
+#inputArea{display:flex;gap:10px;padding:12px;border-top:1px solid #222;background:#111}
+#messageInput{flex:1;padding:10px;border-radius:8px;border:1px solid #222;background:#0d0d0d;color:#fff}
+#sendBtn{background:var(--accent);border:none;padding:10px 14px;border-radius:8px;color:#fff;cursor:pointer}
+/* modal settings */
+#settings-modal,#profile-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:50}
+#settings-box,#profile-box{background:#121212;border-radius:10px;padding:18px;width:320px;text-align:center}
+#settings-box h3,#profile-box h3{margin:0 0 10px 0}
+#close-settings,#close-profile{margin-top:12px;width:100%;padding:10px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer}
+/* small helpers */
+.muted{color:var(--muted);font-size:13px}
+.small{font-size:12px;color:var(--muted)}
+</style>
 </head>
 <body>
-  <div id="search-container">
-    <input id="search-input" type="text" placeholder="Введите user ID для поиска..." />
-    <button id="search-btn">Найти</button>
-    <span id="private"></span>
+<div id="sidebar">
+  <div id="topbar">
+    <h2>Чаты</h2>
+    <div style="display:flex;gap:8px">
+      <button id="createChatBtn">➕</button>
+      <button id="settings-btn">⚙️</button>
+    </div>
   </div>
+  <input id="searchBox" placeholder="🔍 Поиск по @юзернейму" />
+  <div id="chatList"></div>
+  <div class="small muted">Найди друзей по их @юзернейму</div>
+</div>
 
-  <div id="chat"></div>
-
-  <div id="message-input">
-    <input id="message" type="text" placeholder="Введите сообщение..." />
-    <button id="send">Отправить</button>
+<div id="chatWindow">
+  <header>
+    <div class="title" id="chatTitle">—</div>
+    <div style="margin-left:auto" class="muted small" id="userNick"></div>
+  </header>
+  <div id="messages"></div>
+  <div id="inputArea">
+    <input id="messageInput" placeholder="Напиши сообщение..." />
+    <button id="sendBtn">Отправить</button>
   </div>
+</div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
+<!-- настройки -->
+<div id="settings-modal">
+  <div id="settings-box">
+    <h3>Настройки</h3>
+    <div>
+      <label class="small">Твой ник:</label><br>
+      <input id="nickInput" style="width:100%;padding:8px;border-radius:8px;border:1px solid #222;background:#0d0d0d;color:#fff"/>
+    </div>
+    <div style="margin-top:8px">
+      <label class="small">Твой юзернейм (латиница, цифры, _):</label><br>
+      <input id="userInput" style="width:100%;padding:8px;border-radius:8px;border:1px solid #222;background:#0d0d0d;color:#fff"/>
+      <div class="small muted">Менять можно раз в 24 часа</div>
+    </div>
+    <div style="margin-top:8px">
+      <label class="small">Аватар (URL)</label><br>
+      <input id="avatarInput" style="width:100%;padding:8px;border-radius:8px;border:1px solid #222;background:#0d0d0d;color:#fff" placeholder="https://..."/>
+    </div>
+    <button id="close-settings">Сохранить и закрыть</button>
+  </div>
+</div>
 
-    // 🧠 Локальный "профиль" (можно потом взять из auth)
-    const userId = localStorage.getItem("userId") || "user_" + Math.random().toString(36).substring(2, 10);
-    const nick = localStorage.getItem("nick") || "Пользователь_" + Math.floor(Math.random() * 1000);
+<!-- просмотр профиля -->
+<div id="profile-modal">
+  <div id="profile-box">
+    <div id="profile-avatar" class="avatar" style="margin:0 auto 10px auto;"></div>
+    <h3 id="profile-nick">Имя</h3>
+    <div class="muted" id="profile-username">@user</div>
+    <button id="start-chat-btn" style="margin-top:14px;width:100%;padding:10px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer">Написать</button>
+    <button id="close-profile" style="margin-top:8px;width:100%;padding:10px;border-radius:8px;border:none;background:#444;color:#fff;cursor:pointer">Закрыть</button>
+  </div>
+</div>
 
-    localStorage.setItem("userId", userId);
-    localStorage.setItem("nick", nick);
+<script>
+const STORAGE_KEY = 'slc_chats_v3';
+const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null') || {
+  chats:{}, users:{}, currentNick:null, currentAvatar:null, currentChat:null,
+  username:null, lastUsernameChange:0
+};
 
-    socket.emit("join", { userId, nick });
-    console.log("🟢 Вы вошли как", nick, `(${userId})`);
+const chatListEl = document.getElementById('chatList');
+const searchBox = document.getElementById('searchBox');
+const createChatBtn = document.getElementById('createChatBtn');
+const settingsBtn = document.getElementById('settings-btn');
+const chatTitle = document.getElementById('chatTitle');
+const userNickEl = document.getElementById('userNick');
+const messagesEl = document.getElementById('messages');
+const messageInput = document.getElementById('messageInput');
+const sendBtn = document.getElementById('sendBtn');
+const settingsModal = document.getElementById('settings-modal');
+const nickInput = document.getElementById('nickInput');
+const userInput = document.getElementById('userInput');
+const avatarInput = document.getElementById('avatarInput');
+const closeSettings = document.getElementById('close-settings');
+const profileModal = document.getElementById('profile-modal');
+const profileNick = document.getElementById('profile-nick');
+const profileUsername = document.getElementById('profile-username');
+const profileAvatar = document.getElementById('profile-avatar');
+const closeProfile = document.getElementById('close-profile');
+const startChatBtn = document.getElementById('start-chat-btn');
 
-    const chat = document.getElementById("chat");
-    const msgInput = document.getElementById("message");
-    const sendBtn = document.getElementById("send");
-    const searchInput = document.getElementById("search-input");
-    const searchBtn = document.getElementById("search-btn");
-    const privateInfo = document.getElementById("private");
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
 
-    let privateUser = null; // кому отправляем личные
+if(!data.currentNick){ data.currentNick=prompt('Введите ваш ник:')||'Гость'; }
+if(!data.username){ data.username='user_'+Math.floor(Math.random()*10000); }
+if(!data.currentChat){
+  if(!data.chats['Избранное'])data.chats['Избранное']={avatar:null,messages:[]};
+  data.currentChat='Избранное';
+}
+data.users[data.username]={nick:data.currentNick,avatar:data.currentAvatar};
 
-    // 📩 Отправка сообщения
-    sendBtn.onclick = () => {
-      const text = msgInput.value.trim();
-      if (!text) return;
-      if (privateUser) {
-        socket.emit("privateMessage", { toUserId: privateUser, text });
-      } else {
-        socket.emit("message", text);
-      }
-      msgInput.value = "";
-    };
+userNickEl.textContent=`${data.currentNick} (@${data.username})`;
 
-    // 📥 Получение общих сообщений
-    socket.on("message", (msg) => {
-      addMessage(msg.nick, msg.text, msg.id === socket.id ? "mine" : "other");
-    });
+function renderChatList(){
+  chatListEl.innerHTML='';
+  Object.keys(data.chats).forEach(name=>{
+    const item=document.createElement('div');
+    item.className='chat-item'+(name===data.currentChat?' active':'');
+    const av=document.createElement('div');
+    av.className='avatar';
+    const chatMeta=data.chats[name];
+    if(chatMeta&&chatMeta.avatar){const img=document.createElement('img');img.src=chatMeta.avatar;av.appendChild(img);}
+    else{av.textContent=name[0]?name[0].toUpperCase():'?';}
+    item.appendChild(av);
+    const info=document.createElement('div');
+    const title=document.createElement('div');
+    title.className='chat-name';title.textContent=name;
+    info.appendChild(title);item.appendChild(info);
+    item.onclick=()=>{data.currentChat=name;save();renderAll();};
+    chatListEl.appendChild(item);
+  });
+}
 
-    // 💌 Получение личных сообщений
-    socket.on("privateMessage", (msg) => {
-      const sender = msg.from.nick === nick ? "Вы" : msg.from.nick;
-      addMessage(sender, `(ЛС) ${msg.text}`, msg.from.userId === userId ? "mine private" : "other private");
-    });
-
-    // 🔍 Поиск пользователя
-    searchBtn.onclick = () => {
-      const query = searchInput.value.trim();
-      if (!query) return;
-
-      socket.emit("findUser", query, (res) => {
-        if (res.success) {
-          privateUser = res.user.userId;
-          privateInfo.textContent = `Личные сообщения с ${res.user.nick}`;
-          privateInfo.style.color = "#ff9800";
-        } else {
-          privateUser = null;
-          privateInfo.textContent = "❌ Пользователь не найден";
-          privateInfo.style.color = "red";
-        }
+function renderMessages(){
+  messagesEl.innerHTML='';
+  const chat=data.chats[data.currentChat];
+  if(!chat)return;
+  chat.messages.forEach(m=>{
+    const b=document.createElement('div');
+    b.className='msg'+(m.nick===data.currentNick?' own':'');
+    b.innerHTML=`<div style="font-weight:600">${escapeHtml(m.nick)}</div>
+                 <div style="margin-top:6px">${escapeHtml(m.text)}</div>
+                 <div class="meta">${new Date(m.time).toLocaleString()}</div>`;
+    if(m.nick===data.currentNick){
+      b.addEventListener('contextmenu',e=>{
+        e.preventDefault();
+        if(confirm('Удалить это сообщение?'))deleteMessageById(data.currentChat,m.id);
       });
-    };
-
-    // 📤 Добавление сообщения в чат
-    function addMessage(nick, text, cls = "other") {
-      const div = document.createElement("div");
-      div.className = "msg " + cls;
-      div.textContent = `${nick}: ${text}`;
-      chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight;
     }
-  </script>
+    messagesEl.appendChild(b);
+  });
+  messagesEl.scrollTop=messagesEl.scrollHeight;
+}
+
+function renderAll(){
+  renderChatList();
+  chatTitle.textContent=data.currentChat||'—';
+  userNickEl.textContent=`${data.currentNick} (@${data.username})`;
+  renderMessages();
+}
+
+createChatBtn.onclick=()=>{
+  const name=prompt('Название нового чата:');
+  if(!name)return;
+  if(data.chats[name])return alert('Чат уже существует');
+  data.chats[name]={avatar:null,messages:[]};
+  data.currentChat=name;save();renderAll();
+};
+
+settingsBtn.onclick=()=>{
+  settingsModal.style.display='flex';
+  nickInput.value=data.currentNick||'';
+  userInput.value=data.username||'';
+  avatarInput.value=data.currentAvatar||'';
+};
+
+closeSettings.onclick=()=>{
+  data.currentNick=nickInput.value.trim()||'Гость';
+  const newUser=userInput.value.trim();
+  if(newUser!==data.username){
+    const now=Date.now();
+    if(now-data.lastUsernameChange<86400000){
+      alert('Менять юзернейм можно раз в 24 часа');
+    }else if(!/^[a-zA-Z0-9_]+$/.test(newUser)){
+      alert('Юзернейм может содержать только латиницу, цифры и _');
+    }else{
+      delete data.users[data.username];
+      data.username=newUser;
+      data.lastUsernameChange=now;
+      data.users[newUser]={nick:data.currentNick,avatar:data.currentAvatar};
+    }
+  }
+  data.currentAvatar=avatarInput.value.trim()||null;
+  data.users[data.username]={nick:data.currentNick,avatar:data.currentAvatar};
+  settingsModal.style.display='none';
+  save();renderAll();
+};
+
+sendBtn.onclick=sendMessage;
+messageInput.onkeydown=e=>{if(e.key==='Enter')sendMessage();};
+
+function sendMessage(){
+  const text=messageInput.value.trim();
+  if(!text)return;
+  const chat=data.chats[data.currentChat];
+  if(!chat)return;
+  const msg={id:uid(),nick:data.currentNick,avatar:data.currentAvatar,text,time:Date.now()};
+  chat.messages.push(msg);save();
+  messageInput.value='';renderMessages();
+}
+
+function deleteMessageById(chat,id){
+  const chatData=data.chats[chat];
+  if(!chatData)return;
+  chatData.messages=chatData.messages.filter(m=>m.id!==id);
+  save();renderMessages();
+}
+
+function escapeHtml(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
+window.onclick=e=>{
+  if(e.target===settingsModal)settingsModal.style.display='none';
+  if(e.target===profileModal)profileModal.style.display='none';
+};
+
+// поиск по @username
+searchBox.onkeydown=e=>{
+  if(e.key==='Enter'){
+    const val=searchBox.value.trim().replace(/^@/,'');
+    if(!val)return;
+    if(data.users[val]){
+      const u=data.users[val];
+      profileNick.textContent=u.nick;
+      profileUsername.textContent='@'+val;
+      profileAvatar.innerHTML='';
+      if(u.avatar){const img=document.createElement('img');img.src=u.avatar;profileAvatar.appendChild(img);}
+      else{profileAvatar.textContent=u.nick[0]?.toUpperCase()||'?';}
+      startChatBtn.onclick=()=>{
+        if(!data.chats[u.nick]){
+          data.chats[u.nick]={avatar:u.avatar||null,messages:[]};
+        }
+        data.currentChat=u.nick;
+        profileModal.style.display='none';
+        save();renderAll();
+      };
+      profileModal.style.display='flex';
+    }else alert('Пользователь не найден.');
+  }
+};
+
+closeProfile.onclick=()=>profileModal.style.display='none';
+renderAll();
+</script>
 </body>
 </html>
